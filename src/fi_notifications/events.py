@@ -2,6 +2,7 @@
 
 import dataclasses
 import datetime
+from typing import assert_never
 import zoneinfo
 
 from fi_notifications import config
@@ -79,6 +80,8 @@ def evaluate(
             msg = _collar_offline(pet, event, now, tz)
         case config.LostMode():
             msg = _lost_mode(pet)
+        case _:
+            assert_never(event)
     if msg is not None and event.priority is not None:
         msg = dataclasses.replace(msg, priority=event.priority)
     return msg

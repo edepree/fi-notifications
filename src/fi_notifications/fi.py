@@ -70,7 +70,7 @@ def parse_fi_date(value: str) -> datetime.datetime:
     Raises:
         ValueError: The value is malformed or has no timezone.
     """
-    parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = datetime.datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         raise ValueError(f"date without timezone: {value!r}")
     return parsed
