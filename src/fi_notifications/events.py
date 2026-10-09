@@ -31,7 +31,7 @@ def _battery_low(pet: fi.PetStatus, event: config.BatteryLow) -> Message | None:
         return None
     pct = pet.battery_percent
     return Message(
-        f"{pet.name}: battery {pct}%",
+        f"{pet.name}: BATTERY LOW",
         f"{pet.name}'s collar battery is {pct}% (threshold {event.threshold}%).",
         "default",
         "battery",
@@ -46,7 +46,7 @@ def _collar_offline(
         return None
     seen = pet.last_connection.astimezone(tz).strftime("%H:%M")
     return Message(
-        f"{pet.name}: collar offline",
+        f"{pet.name}: COLLAR OFFLINE",
         f"No connection for {minutes} minutes (last seen {seen}).",
         "high",
         "warning",
