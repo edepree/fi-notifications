@@ -58,7 +58,7 @@ The budget is per day. It is shared, even if the condition clears and then comes
 
 ### Docker
 
-A GitHub Actions workflow publishes the image to `ghcr.io/edepree/fi-notifications`. It builds `latest` on each push to `main`, and a version tag (for example `1.2.0`) on each `v*` git tag.
+A GitHub Actions workflow publishes the image to `ghcr.io/edepree/fi-notifications`. Each `v*` git tag builds a new image, tagged with the version (for example `1.2.0`) and `latest`.
 
 ```bash
 docker run -v $PWD/config.yaml:/config/config.yaml:ro -p 8080:8080 ghcr.io/edepree/fi-notifications:latest
