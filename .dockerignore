@@ -1,0 +1,10 @@
+.git
+.pytest_cache
+.ruff_cache
+.superpowers
+.venv
+**/__pycache__
+deploy
+docs
+scripts
+tests

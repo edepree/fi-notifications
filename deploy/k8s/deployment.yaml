@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fi-notifications
+spec:
+  replicas: 1   # a second replica would double-send
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: fi-notifications }
+  template:
+    metadata:
+      labels: { app: fi-notifications }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: fi-notifications
+          image: ghcr.io/edepree/fi-notifications:latest
+          args: ["--config", "/config/config.yaml"]
+          ports:
+            - { name: health, containerPort: 8080 }
+          livenessProbe:
+            httpGet: { path: /healthz, port: health }
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          readinessProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - {
+                name: secrets,
+                mountPath: /run/secrets/fi-notifications,
+                readOnly: true,
+              }
+            - { name: state, mountPath: /data }
+      volumes:
+        - name: config
+          configMap: { name: fi-notifications }
+        - name: secrets
+          secret: { secretName: fi-notifications }
+        - name: state
+          persistentVolumeClaim: { claimName: fi-notifications-state }

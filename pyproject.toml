@@ -1,0 +1,77 @@
+[project]
+name = "fi-notifications"
+version = "0.1.0"
+description = "Notifications for Fi Collars"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.10",
+    "pyyaml>=6.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.9",
+    "ty>=0.0.1a1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",  # pycodestyle, pyflakes
+    "I",            # import formatting
+    "N",            # naming
+    "D",            # docstrings
+    "ANN",          # type annotations
+    "TID",          # no relative imports
+    "G", "LOG",     # logging with %-patterns
+    "BLE",          # no catch-all excepts
+    "S",            # no assert for validation, plus security checks
+    "DTZ",          # naive datetimes
+    "PGH",          # specific type: ignore codes
+    "PL",           # pylint rules implemented by ruff
+    "UP",           # pyupgrade: modern Python 3.13 syntax
+    "B",            # bugbear: likely bugs
+    "SIM",          # simplifiable code
+    "C4",           # comprehensions
+    "PIE",          # unnecessary code
+    "RET",          # return statements
+    "RUF",          # ruff-specific rules
+    "ASYNC",        # asyncio pitfalls
+]
+ignore = [
+    "ANN401",   # any is needed for pydantic "before" validators
+    "D107",     # allows __init__ args in the class docstring
+    "PLR2004",  # magic values
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "D", "ANN", "PLR0913"]  # 3.8.2.1 exempts test docstrings, credentials are fake
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+force-single-line = true
+single-line-exclusions = ["typing", "collections.abc"]
+force-sort-within-sections = true
+case-sensitive = false
+order-by-type = false
+known-first-party = ["fi_notifications"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
