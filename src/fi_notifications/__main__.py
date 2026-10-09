@@ -149,6 +149,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--log-level", default=os.environ.get("LOG_LEVEL", "INFO"))
     args = parser.parse_args(argv)
     logging.basicConfig(level=args.log_level.upper(), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     try:
         cfg = config.load_config(args.config)
     except (OSError, ValueError, pydantic.ValidationError) as exc:
