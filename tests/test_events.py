@@ -34,7 +34,7 @@ def battery(**kw: Any) -> config.BatteryLow:
 
 def test_battery_low_matches() -> None:
     assert events.evaluate(pet(), battery(), NOW, NY) == events.Message(
-        title="Rex: battery 37%",
+        title="Rex: BATTERY LOW",
         body="Rex's collar battery is 37% (threshold 40%).",
         priority="default",
         tags="battery",
@@ -62,7 +62,7 @@ def test_offline_matches() -> None:
     event = config.CollarOffline(type="collar_offline", target="t", minutes=60)
     msg = events.evaluate(pet(), event, NOW, NY)
     assert msg == events.Message(
-        title="Rex: collar offline",
+        title="Rex: COLLAR OFFLINE",
         body="No connection for 72 minutes (last seen 10:02).",
         priority="high",
         tags="warning",

@@ -40,7 +40,9 @@ With `suppress_when_charging`, `battery_low` stays quiet while the collar charge
 
 ### Windows and Rate Limits
 
-The service drops notifications outside a target's `window`.
+The service drops notifications outside a target's `window`. Add `days` (`mon`–`sun`, any case) to limit the
+window to certain weekdays, for example `{ start: "08:00", end: "20:00", days: [mon, tue, wed, thu, fri] }`.
+Without `days`, the window applies every day.
 
 Without `max_per_window`, every matching poll sends a notification. With `max_per_window: N`, each
 send splits the *remaining* window evenly between the remaining sends. Example with a

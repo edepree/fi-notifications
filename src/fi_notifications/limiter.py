@@ -28,7 +28,7 @@ class LimiterState:
 def window_bounds(
     t: datetime.datetime, window: config.Window | None
 ) -> tuple[datetime.datetime, datetime.datetime] | None:
-    """Returns the window on `t`'s local date as [start, end), or None if `t` is outside it.
+    """Returns the window on `t`'s local date as [start, end), or None if `t` is outside it or on an excluded weekday.
 
     Args:
         t: Aware time in the configured timezone.
@@ -38,6 +38,8 @@ def window_bounds(
     if window is None:
         start = datetime.datetime.combine(day, datetime.time(0), tzinfo=t.tzinfo)
         end = datetime.datetime.combine(day + datetime.timedelta(days=1), datetime.time(0), tzinfo=t.tzinfo)
+    elif window.days is not None and day.weekday() not in window.days:
+        return None
     else:
         start = datetime.datetime.combine(day, window.start, tzinfo=t.tzinfo)
         end = datetime.datetime.combine(day, window.end, tzinfo=t.tzinfo)

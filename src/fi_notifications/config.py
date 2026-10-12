@@ -50,16 +50,34 @@ class _Model(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
 
 
+_DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
 class Window(_Model):
-    """Daily delivery window, in the configured timezone.
+    """Delivery window, in the configured timezone.
 
     Attributes:
         start: First time of day notifications may be sent.
         end: Exclusive end; must be after `start` (midnight-crossing is not supported).
+        days: Weekdays the window applies on (0 = Monday), given as names like "mon"; None means every day.
     """
 
     start: datetime.time
     end: datetime.time
+    days: frozenset[int] | None = None
+
+    @pydantic.field_validator("days", mode="before")
+    @classmethod
+    def _day_names(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        if not value:
+            raise ValueError("days must not be empty; omit it for every day")
+        names = [str(d).lower() for d in value]
+        unknown = [d for d in names if d not in _DAYS]
+        if unknown:
+            raise ValueError(f"unknown days {unknown}; use {', '.join(_DAYS)}")
+        return frozenset(_DAYS.index(d) for d in names)
 
     @pydantic.model_validator(mode="after")
     def _ordered(self) -> Self:

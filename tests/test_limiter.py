@@ -77,3 +77,10 @@ def test_dst_spring_forward() -> None:
     w = config.Window(start=datetime.time(1), end=datetime.time(5))
     s = limiter.record(limiter.LimiterState(), at(1, day=8, month=3), w, 2)
     assert s.next_allowed == datetime.datetime(2026, 3, 8, 7, 30, tzinfo=datetime.UTC)
+
+
+def test_window_days() -> None:
+    weekdays = config.Window(start=datetime.time(8), end=datetime.time(20), days=["mon", "fri"])
+    assert limiter.window_bounds(at(9), weekdays) == (at(8), at(20))  # Fri
+    assert limiter.window_bounds(at(9, day=10), weekdays) is None  # Sat
+    assert limiter.allowed(limiter.LimiterState(), at(9, day=10), weekdays, None) is False

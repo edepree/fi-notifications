@@ -132,3 +132,14 @@ def test_example_config_is_valid(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "config.yaml"
     path.write_text(text.replace("/run/secrets/fi-notifications", str(tmp_path)))
     assert config.load_config(path).collars[0].name == "Rex"
+
+
+def test_window_days(write) -> None:
+    cfg = config.load_config(write(**{'end: "20:00"': 'end: "20:00", days: [Mon, SAT]'}))
+    assert cfg.targets["phone"].window.days == {0, 5}
+
+
+@pytest.mark.parametrize("days", ["[]", "[funday]"])
+def test_window_bad_days_rejected(write, days: str) -> None:
+    with pytest.raises(ValueError):
+        config.load_config(write(**{'end: "20:00"': f'end: "20:00", days: {days}'}))
