@@ -2,6 +2,7 @@
 
 import dataclasses
 import datetime
+import re
 from typing import assert_never
 import zoneinfo
 
@@ -18,12 +19,14 @@ class Message:
         body: Message text.
         priority: ntfy priority name.
         tags: Comma-separated ntfy tags.
+        sid: ntfy sequence id, so repeats replace the previous notification.
     """
 
     title: str
     body: str
     priority: str
     tags: str
+    sid: str = ""
 
 
 def _battery_low(pet: fi.PetStatus, event: config.BatteryLow) -> Message | None:
@@ -31,7 +34,7 @@ def _battery_low(pet: fi.PetStatus, event: config.BatteryLow) -> Message | None:
         return None
     pct = pet.battery_percent
     return Message(
-        f"{pet.name}: BATTERY LOW",
+        f"{pet.name}: Battery Low",
         f"{pet.name}'s collar battery is {pct}% (threshold {event.threshold}%).",
         "default",
         "battery",
@@ -46,7 +49,7 @@ def _collar_offline(
         return None
     seen = pet.last_connection.astimezone(tz).strftime("%H:%M")
     return Message(
-        f"{pet.name}: COLLAR OFFLINE",
+        f"{pet.name}: Collar Offline",
         f"No connection for {minutes} minutes (last seen {seen}).",
         "high",
         "warning",
@@ -56,7 +59,7 @@ def _collar_offline(
 def _lost_mode(pet: fi.PetStatus) -> Message | None:
     if pet.mode != "LOST_DOG":
         return None
-    return Message(f"{pet.name}: LOST MODE", "Lost dog mode is active.", "urgent", "rotating_light")
+    return Message(f"{pet.name}: Lost Mode", "Lost dog mode is active.", "urgent", "rotating_light")
 
 
 def evaluate(
@@ -82,6 +85,8 @@ def evaluate(
             msg = _lost_mode(pet)
         case _:
             assert_never(event)
-    if msg is not None and event.priority is not None:
-        msg = dataclasses.replace(msg, priority=event.priority)
-    return msg
+    if msg is None:
+        return None
+    # ntfy only accepts [-_A-Za-z0-9]{1,64}; Fi ids are external
+    sid = re.sub(r"[^-_A-Za-z0-9]", "_", f"{pet.pet_id}-{event.type}")[-64:]
+    return dataclasses.replace(msg, priority=event.priority or msg.priority, sid=sid)

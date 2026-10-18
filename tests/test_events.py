@@ -34,10 +34,11 @@ def battery(**kw: Any) -> config.BatteryLow:
 
 def test_battery_low_matches() -> None:
     assert events.evaluate(pet(), battery(), NOW, NY) == events.Message(
-        title="Rex: BATTERY LOW",
+        title="Rex: Battery Low",
         body="Rex's collar battery is 37% (threshold 40%).",
         priority="default",
         tags="battery",
+        sid="p-battery_low",
     )
 
 
@@ -62,10 +63,11 @@ def test_offline_matches() -> None:
     event = config.CollarOffline(type="collar_offline", target="t", minutes=60)
     msg = events.evaluate(pet(), event, NOW, NY)
     assert msg == events.Message(
-        title="Rex: COLLAR OFFLINE",
+        title="Rex: Collar Offline",
         body="No connection for 72 minutes (last seen 10:02).",
         priority="high",
         tags="warning",
+        sid="p-collar_offline",
     )
 
 
@@ -78,10 +80,11 @@ def test_lost_mode() -> None:
     event = config.LostMode(type="lost_mode", target="t")
     assert events.evaluate(pet(), event, NOW, NY) is None
     assert events.evaluate(pet(mode="LOST_DOG"), event, NOW, NY) == events.Message(
-        title="Rex: LOST MODE",
+        title="Rex: Lost Mode",
         body="Lost dog mode is active.",
         priority="urgent",
         tags="rotating_light",
+        sid="p-lost_mode",
     )
 
 
@@ -89,3 +92,9 @@ def test_priority_override() -> None:
     msg = events.evaluate(pet(), battery(priority="high"), NOW, NY)
     assert msg is not None
     assert msg.priority == "high"
+
+
+def test_sid_sanitized() -> None:
+    msg = events.evaluate(pet(pet_id="a/b c"), battery(), NOW, NY)
+    assert msg is not None
+    assert msg.sid == "a_b_c-battery_low"

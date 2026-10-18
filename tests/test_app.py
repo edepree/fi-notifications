@@ -71,7 +71,7 @@ async def test_sends_battery_low_in_window(tmp_path: pathlib.Path) -> None:
     ntfy = Ntfy()
     states = await run_polls(make_config(tmp_path), ntfy, at(9))
     assert len(ntfy.requests) == 1
-    assert ntfy.requests[0].url.params["title"] == "Rex: BATTERY LOW"
+    assert ntfy.requests[0].url.params["title"] == "Rex: Battery Low"
     assert states[("Rex", 0)].sent == 1
 
 

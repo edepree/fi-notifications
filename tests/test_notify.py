@@ -7,7 +7,7 @@ from fi_notifications import config
 from fi_notifications import events
 from fi_notifications import notify
 
-MSG = events.Message(title="Zoë: battery 37%", body="low", priority="default", tags="battery")
+MSG = events.Message(title="Zoë: battery 37%", body="low", priority="default", tags="battery", sid="p-battery_low")
 
 
 def target(**kw: str) -> config.NtfyTarget:
@@ -37,6 +37,7 @@ async def test_ntfy_bearer() -> None:
     assert req.url.params["title"] == "Zoë: battery 37%"  # Non-ASCII survives via the query string
     assert req.url.params["priority"] == "default"
     assert req.url.params["tags"] == "battery"
+    assert req.url.params["sid"] == "p-battery_low"
     assert req.content == b"low"
 
 

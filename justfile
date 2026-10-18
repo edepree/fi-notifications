@@ -27,6 +27,10 @@ typecheck:
 check: test lint typecheck
     uv run ruff format --check
 
+# delete all git-ignored files
+clean:
+    git clean -fdX
+
 # Build the Docker image locally
 docker-build:
     docker build -t fi-notifications .
