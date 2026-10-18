@@ -9,11 +9,11 @@ You need [uv](https://docs.astral.sh/uv/) (it installs Python 3.13 if needed), a
 ```bash
 git clone https://github.com/edepree/fi-notifications.git && cd fi-notifications
 cp config.example.yaml config.yaml   # then edit it
-uv sync
-uv run python -m fi_notifications --config config.yaml
+uv sync                               # also installs just into .venv
+uv run just run                       # or: uv run just run path/to/config.yaml
 ```
 
-Use `--log-level DEBUG` (or the `LOG_LEVEL` environment variable) to see more detail.
+Use `LOG_LEVEL=DEBUG uv run just run` (or `--log-level DEBUG`) to see more detail.
 
 > [!TIP]
 > To see what your collars report before you write a config, run the [probe script](#probing-the-fi-api).
@@ -66,7 +66,7 @@ A GitHub Actions workflow publishes the image to `ghcr.io/edepree/fi-notificatio
 docker run -v $PWD/config.yaml:/config/config.yaml:ro -p 8080:8080 ghcr.io/edepree/fi-notifications:latest
 ```
 
-To build the image yourself, run `docker build -t fi-notifications .`.
+To build the image yourself, run `uv run just docker-build`.
 
 The image runs as user `10001` and reads `/config/config.yaml` by default.
 
@@ -107,7 +107,5 @@ uv run scripts/probe.py ~/.config/fi-notifications/creds
 
 The code follows the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html). See [`pyproject.toml`](pyproject.toml) for the lint rules.
 
-```bash
-uv sync
-uv run pytest && uv run ruff check && uv run ruff format --check && uv run ty check
-```
+Common tasks are in the [`justfile`](justfile). `uv sync` installs [just](https://github.com/casey/just) into `.venv`,
+so run recipes with `uv run just <recipe>`, or activate `.venv` and use `just` directly. Run `uv run just` to list them.

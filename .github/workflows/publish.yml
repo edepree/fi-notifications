@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: read

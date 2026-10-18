@@ -136,7 +136,9 @@ def test_example_config_is_valid(tmp_path: pathlib.Path) -> None:
 
 def test_window_days(write) -> None:
     cfg = config.load_config(write(**{'end: "20:00"': 'end: "20:00", days: [Mon, SAT]'}))
-    assert cfg.targets["phone"].window.days == {0, 5}
+    window = cfg.targets["phone"].window
+    assert window is not None
+    assert window.days == {0, 5}
 
 
 @pytest.mark.parametrize("days", ["[]", "[funday]"])
