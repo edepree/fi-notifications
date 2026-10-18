@@ -10,10 +10,10 @@ You need [uv](https://docs.astral.sh/uv/) (it installs Python 3.13 if needed), a
 git clone https://github.com/edepree/fi-notifications.git && cd fi-notifications
 cp config.example.yaml config.yaml   # then edit it
 uv sync                               # also installs just into .venv
-uv run just run                       # or: uv run just run path/to/config.yaml
+uv run python -m fi_notifications --config config.yaml
 ```
 
-Use `LOG_LEVEL=DEBUG uv run just run` (or `--log-level DEBUG`) to see more detail.
+Use `--log-level DEBUG` (or the `LOG_LEVEL` environment variable) to see more detail.
 
 > [!TIP]
 > To see what your collars report before you write a config, run the [probe script](#probing-the-fi-api).
@@ -60,11 +60,15 @@ The budget is per day. It is shared, even if the condition clears and then comes
 
 ### Docker
 
-A GitHub Actions workflow publishes the image to `ghcr.io/edepree/fi-notifications`. Each `v*` git tag builds a new image, tagged with the version (for example `1.2.0`) and `latest`.
+A GitHub Actions workflow publishes the image to `ghcr.io/edepree/fi-notifications`. A new version in `pyproject.toml` on `main` builds a new image, tagged with the version (for example `1.2.0`) and `latest`.
 
 ```bash
 docker run -v $PWD/config.yaml:/config/config.yaml:ro -p 8080:8080 ghcr.io/edepree/fi-notifications:latest
 ```
+
+To cut a release, bump the version (by hand plus `uv lock`, or with `uv version X.Y.Z`) and push to `main`. If there is
+no `v<version>` git tag yet, CI runs the checks, publishes the image, then creates the tag. To retry a failed release, re-run
+the failed job, or push a fix to `main`.
 
 To build the image yourself, run `uv run just docker-build`.
 
