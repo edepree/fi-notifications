@@ -67,8 +67,7 @@ docker run -v $PWD/config.yaml:/config/config.yaml:ro -p 8080:8080 ghcr.io/edepr
 ```
 
 To cut a release, bump the version (by hand plus `uv lock`, or with `uv version X.Y.Z`) and push to `main`. If there is
-no `v<version>` git tag yet, CI runs the checks, publishes the image, then creates the tag. To retry a failed release, re-run
-the failed job, or push a fix to `main`.
+no `v<version>` git tag yet, CI runs the checks, publishes the image, then creates a GitHub release (and the tag). To retry a failed release, re-run the failed job, or push a fix to `main`.
 
 To build the image yourself, run `uv run just docker-build`.
 
