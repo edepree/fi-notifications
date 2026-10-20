@@ -28,7 +28,7 @@ jobs:
       # --locked fails if uv.lock is out of date with pyproject.toml
       - run: uv sync --locked
 
-      - run: uv run just check
+      - run: uvx --from rust-just just check
 
       # a version in pyproject.toml without a matching v<version> tag is a release
       - id: version

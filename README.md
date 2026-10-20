@@ -9,7 +9,7 @@ You need [uv](https://docs.astral.sh/uv/) (it installs Python 3.13 if needed), a
 ```bash
 git clone https://github.com/edepree/fi-notifications.git && cd fi-notifications
 cp config.example.yaml config.yaml   # then edit it
-uv sync                               # also installs just into .venv
+uv sync
 uv run python -m fi_notifications --config config.yaml
 ```
 
@@ -69,7 +69,7 @@ docker run -v $PWD/config.yaml:/config/config.yaml:ro -p 8080:8080 ghcr.io/edepr
 To cut a release, bump the version (by hand plus `uv lock`, or with `uv version X.Y.Z`) and push to `main`. If there is
 no `v<version>` git tag yet, CI runs the checks, publishes the image, then creates a GitHub release (and the tag). To retry a failed release, re-run the failed job, or push a fix to `main`.
 
-To build the image yourself, run `uv run just docker-build`.
+To build the image yourself, run `just docker-build`.
 
 The image runs as user `10001` and reads `/config/config.yaml` by default.
 
@@ -110,5 +110,4 @@ uv run scripts/probe.py ~/.config/fi-notifications/creds
 
 The code follows the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html). See [`pyproject.toml`](pyproject.toml) for the lint rules.
 
-Common tasks are in the [`justfile`](justfile). `uv sync` installs [just](https://github.com/casey/just) into `.venv`,
-so run recipes with `uv run just <recipe>`, or activate `.venv` and use `just` directly. Run `uv run just` to list them.
+Common tasks are in the [`justfile`](justfile). [Install just](https://github.com/casey/just#installation), then run `just` to list the recipes.
