@@ -1,36 +1,33 @@
 # list available recipes
-help:
-    @just --list
+default:
+    @{{ just_executable() }} --list
 
 # install dependencies, including the dev group
 sync:
     uv sync
 
-# run the test suite, passing any extra args to pytest
-test *args:
-    uv run pytest {{args}}
+# run the test suite
+test:
+    uv run pytest
 
-# lint with ruff
+# format check, lint, type check
 lint:
+    uv run ruff format --check
     uv run ruff check
-
-# format and auto-fix lint issues with ruff
-fmt:
-    uv run ruff format
-    uv run ruff check --fix
-
-# type check with ty
-typecheck:
     uv run ty check
 
-# test, lint, format check, types
-check: test lint typecheck
-    uv run ruff format --check
+# auto-fix lint issues and format with ruff
+format:
+    uv run ruff check --fix
+    uv run ruff format
 
-# delete all git-ignored files
+# what CI runs
+check: lint test
+
+# delete all git-ignored files, including .venv (run `uv sync` after)
 clean:
     git clean -fdX
 
-# Build the Docker image locally
+# build the container image locally
 docker-build:
     docker build -t fi-notifications .
