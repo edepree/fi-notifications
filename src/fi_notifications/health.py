@@ -46,10 +46,12 @@ async def serve_health(
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         try:
             parts = (await asyncio.wait_for(reader.readline(), 5)).split()
-            if len(parts) >= 2 and parts[1] == b"/healthz":
-                status = "200 OK" if health.healthy() else "503 Service Unavailable"
-            else:
+            if len(parts) < 2 or parts[1] != b"/healthz":
                 status = "404 Not Found"
+            elif health.healthy():
+                status = "200 OK"
+            else:
+                status = "503 Service Unavailable"
             body = status.encode()
             writer.write(
                 f"HTTP/1.1 {status}\r\nContent-Type: text/plain\r\n"

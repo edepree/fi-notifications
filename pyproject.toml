@@ -52,6 +52,7 @@ ignore = [
     "ANN401",   # any is needed for pydantic "before" validators
     "D107",     # allows __init__ args in the class docstring
     "PLR2004",  # magic values
+    "SIM108",   # prefer if/else blocks over ternary assignments
 ]
 
 [tool.ruff.lint.per-file-ignores]
