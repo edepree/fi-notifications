@@ -70,6 +70,13 @@ def test_offline_matches() -> None:
     )
 
 
+def test_offline_shows_date_after_a_day() -> None:
+    event = config.CollarOffline(type="collar_offline", target="t", minutes=60)
+    msg = events.evaluate(pet(), event, LAST + datetime.timedelta(days=2), NY)
+    assert msg is not None
+    assert msg.body.endswith("(last seen Fri Oct 09 10:02).")
+
+
 def test_offline_within_limit_none() -> None:
     event = config.CollarOffline(type="collar_offline", target="t", minutes=90)
     assert events.evaluate(pet(), event, NOW, NY) is None

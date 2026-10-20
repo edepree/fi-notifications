@@ -92,6 +92,17 @@ def test_secret_file_missing(write, tmp_path: pathlib.Path) -> None:
         config.load_config(write(**{f"{tmp_path}/fi-password": f"{tmp_path}/nope"}))
 
 
+def test_secret_file_empty(write, tmp_path: pathlib.Path) -> None:
+    (tmp_path / "fi-password").write_text("  \n")
+    with pytest.raises(ValueError, match="empty"):
+        config.load_config(write())
+
+
+def test_secret_file_null(write, tmp_path: pathlib.Path) -> None:
+    with pytest.raises(ValueError, match="must be a file path"):
+        config.load_config(write(**{f"{tmp_path}/fi-password": ""}))
+
+
 def test_window_crossing_midnight_rejected(write) -> None:
     with pytest.raises(ValueError, match="start"):
         config.load_config(write(**{'start: "08:00", end: "20:00"': 'start: "22:00", end: "06:00"'}))

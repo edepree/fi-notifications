@@ -1,4 +1,4 @@
-"""Optional JSON persistence of limiter state, keyed by (collar name, event index)."""
+"""Optional JSON persistence of limiter state, keyed by (collar name, event id)."""
 
 import json
 import logging
@@ -11,7 +11,7 @@ from fi_notifications import limiter
 
 log = logging.getLogger(__name__)
 
-type StateKey = tuple[str, int]
+type StateKey = tuple[str, str]
 
 _ADAPTER = pydantic.TypeAdapter(limiter.LimiterState)
 
@@ -34,8 +34,8 @@ def load_state(path: pathlib.Path | None, valid_keys: set[StateKey]) -> dict[Sta
         state: dict[StateKey, limiter.LimiterState] = {}
 
         for key, value in raw.items():
-            name, _, index = key.rpartition("/")
-            parsed = (name, int(index))
+            name, event_id = json.loads(key)
+            parsed = (name, event_id)
 
             if parsed in valid_keys:
                 state[parsed] = _ADAPTER.validate_python(value)
@@ -59,7 +59,7 @@ def save_state(path: pathlib.Path | None, state: dict[StateKey, limiter.LimiterS
     if path is None:
         return
 
-    raw = {f"{name}/{index}": _ADAPTER.dump_python(s, mode="json") for (name, index), s in state.items()}
+    raw = {json.dumps(list(key)): _ADAPTER.dump_python(s, mode="json") for key, s in state.items()}
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(raw, indent=2))
     os.replace(tmp, path)

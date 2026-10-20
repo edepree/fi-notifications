@@ -72,7 +72,7 @@ async def test_sends_battery_low_in_window(tmp_path: pathlib.Path) -> None:
     states = await run_polls(make_config(tmp_path), ntfy, at(9))
     assert len(ntfy.requests) == 1
     assert ntfy.requests[0].url.params["title"] == "Rex: Battery Low"
-    assert states[("Rex", 0)].sent == 1
+    assert states[("Rex", "battery_low:phone")].sent == 1
 
 
 async def test_respects_limit_across_polls(tmp_path: pathlib.Path) -> None:
@@ -97,7 +97,7 @@ async def test_failed_send_not_recorded(tmp_path: pathlib.Path) -> None:
     ntfy = Ntfy(status=500)
     states = await run_polls(make_config(tmp_path), ntfy, at(9))
     assert len(ntfy.requests) == 1
-    assert states.get(("Rex", 0), limiter.LimiterState()).sent == 0
+    assert states.get(("Rex", "battery_low:phone"), limiter.LimiterState()).sent == 0
 
 
 async def test_missing_collar_warns_and_continues(tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture) -> None:
@@ -110,7 +110,7 @@ async def test_missing_collar_warns_and_continues(tmp_path: pathlib.Path, caplog
 async def test_state_saved_after_send(tmp_path: pathlib.Path) -> None:
     await run_polls(make_config(tmp_path), Ntfy(), at(9))
     saved = json.loads((tmp_path / "state.json").read_text())
-    assert saved["Rex/0"]["sent"] == 1
+    assert saved['["Rex", "battery_low:phone"]']["sent"] == 1
 
 
 def test_check_collars_lists_available(tmp_path: pathlib.Path) -> None:
@@ -124,5 +124,24 @@ async def test_unwritable_state_file_keeps_running(tmp_path: pathlib.Path, caplo
     ntfy = Ntfy()
     states = await run_polls(cfg, ntfy, at(8), at(8, 5))
     assert len(ntfy.requests) == 1  # In-memory budget still enforced
-    assert states[("Rex", 0)].sent == 1
+    assert states[("Rex", "battery_low:phone")].sent == 1
     assert "state" in caplog.text
+
+
+def test_event_keys_stable_and_unique() -> None:
+    collar = config.Collar.model_validate(
+        {
+            "name": "Rex",
+            "events": [
+                {"type": "lost_mode", "target": "phone"},
+                {"type": "battery_low", "target": "phone"},
+                {"type": "battery_low", "target": "phone", "threshold": 20},
+            ],
+        }
+    )
+    assert app.event_keys(collar) == ["lost_mode:phone", "battery_low:phone", "battery_low:phone:1"]
+
+
+def test_duplicate_collar_names_rejected(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(ValueError, match="duplicate collar names: Rex"):
+        make_config(tmp_path, collars=("Rex", "Rex"))

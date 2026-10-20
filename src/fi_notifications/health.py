@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Callable
+import contextlib
 import time
 
 
@@ -59,9 +60,11 @@ async def serve_health(
                 + body
             )
             await writer.drain()
-        except (TimeoutError, ConnectionError):
+        except (TimeoutError, ConnectionError, ValueError):  # ValueError: request line over the stream limit
             pass
         finally:
             writer.close()
+            with contextlib.suppress(ConnectionError):
+                await writer.wait_closed()
 
     return await asyncio.start_server(handle, host, port)

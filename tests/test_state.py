@@ -11,34 +11,36 @@ S = limiter.LimiterState(datetime.date(2026, 10, 9), 1, datetime.datetime(2026, 
 
 def test_round_trip(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "state.json"
-    state = {("Rex", 0): S, ("Odd/Name", 2): limiter.LimiterState()}
+    state = {("Rex", "battery_low:phone"): S, ("Odd/Name", "lost_mode:a/b"): limiter.LimiterState()}
     state_store.save_state(path, state)
     assert state_store.load_state(path, set(state)) == state
 
 
 def test_missing_file_empty(tmp_path: pathlib.Path) -> None:
-    assert state_store.load_state(tmp_path / "nope.json", {("Rex", 0)}) == {}
+    assert state_store.load_state(tmp_path / "nope.json", {("Rex", "battery_low:phone")}) == {}
 
 
 def test_none_path_noop() -> None:
-    state_store.save_state(None, {("Rex", 0): S})
-    assert state_store.load_state(None, {("Rex", 0)}) == {}
+    state_store.save_state(None, {("Rex", "battery_low:phone"): S})
+    assert state_store.load_state(None, {("Rex", "battery_low:phone")}) == {}
 
 
 def test_corrupt_file_empty_and_logs(tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture) -> None:
     path = tmp_path / "state.json"
     path.write_text("{not json")
-    assert state_store.load_state(path, {("Rex", 0)}) == {}
+    assert state_store.load_state(path, {("Rex", "battery_low:phone")}) == {}
     assert "state" in caplog.text
 
 
 def test_unknown_keys_dropped(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "state.json"
-    state_store.save_state(path, {("Rex", 0): S, ("Gone", 0): S, ("Rex", 5): S})
-    assert state_store.load_state(path, {("Rex", 0)}) == {("Rex", 0): S}
+    state_store.save_state(
+        path, {("Rex", "battery_low:phone"): S, ("Gone", "battery_low:phone"): S, ("Rex", "lost_mode:phone"): S}
+    )
+    assert state_store.load_state(path, {("Rex", "battery_low:phone")}) == {("Rex", "battery_low:phone"): S}
 
 
 def test_atomic_write_no_tmp_left(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "state.json"
-    state_store.save_state(path, {("Rex", 0): S})
+    state_store.save_state(path, {("Rex", "battery_low:phone"): S})
     assert [p.name for p in tmp_path.iterdir()] == ["state.json"]

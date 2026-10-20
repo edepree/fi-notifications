@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import collections
 import contextlib
 import datetime
 import logging
@@ -41,6 +42,22 @@ def check_collars(cfg: config.Config, names: set[str]) -> None:
         raise SystemExit(f"collars not found on Fi account: {', '.join(missing)}; available: {available}")
 
 
+def event_keys(collar: config.Collar) -> list[str]:
+    """Returns a stable limiter-state id per event, parallel to `collar.events`.
+
+    Ids survive reordering; repeated type/target pairs get a numeric suffix.
+    """
+    seen: collections.Counter[str] = collections.Counter()
+    keys = []
+
+    for event in collar.events:
+        base = f"{event.type}:{event.target}"
+        keys.append(f"{base}:{seen[base]}" if seen[base] else base)
+        seen[base] += 1
+
+    return keys
+
+
 async def poll_once(
     cfg: config.Config,
     pets: list[fi.PetStatus],
@@ -50,8 +67,8 @@ async def poll_once(
 ) -> States:
     """Evaluates every subscription against fetched pets and sends allowed notifications.
 
-    Missing collars and failed sends are logged, not raised. State is saved after
-    each successful send.
+    Missing collars and failed sends are logged, not raised. State is saved once
+    at the end if anything was sent.
 
     Args:
         cfg: Service config.
@@ -65,18 +82,19 @@ async def poll_once(
     """
     by_name = {p.name: p for p in pets}
     states = dict(states)
+    sent = False
     for collar in cfg.collars:
         pet = by_name.get(collar.name)
         if pet is None:
             log.warning("collar %r not returned by Fi this poll", collar.name)
             continue
-        for index, event in enumerate(collar.events):
+
+        for key, event in zip(event_keys(collar), collar.events, strict=True):
             msg = events.evaluate(pet, event, now, cfg.timezone)
             if msg is None:
                 continue
-            key = (collar.name, index)
             target = cfg.targets[event.target]
-            current = states.get(key, limiter.LimiterState())
+            current = states.get((collar.name, key), limiter.LimiterState())
             if not limiter.allowed(current, now, target.window, event.max_per_window):
                 log.debug("%s/%s matched but limited", collar.name, event.type)
                 continue
@@ -86,11 +104,15 @@ async def poll_once(
                 log.error("notify %s for %s failed: %s", event.target, collar.name, exc)
                 continue
             log.info("sent %s for %s to %s", event.type, collar.name, event.target)
-            states[key] = limiter.record(current, now, target.window, event.max_per_window)
-            try:
-                state_store.save_state(cfg.state_file, states)
-            except OSError as exc:  # keep running on in-memory state rather than crash-loop
-                log.error("cannot write state file %s: %s", cfg.state_file, exc)
+            states[(collar.name, key)] = limiter.record(current, now, target.window, event.max_per_window)
+            sent = True
+
+    if sent:
+        try:
+            state_store.save_state(cfg.state_file, states)
+        except OSError as exc:  # keep running on in-memory state rather than crash-loop
+            log.error("cannot write state file %s: %s", cfg.state_file, exc)
+
     return states
 
 
@@ -101,14 +123,14 @@ async def run(cfg: config.Config) -> None:
         cfg: Service config.
 
     Raises:
-        SystemExit: A configured collar is not on the Fi account.
+        SystemExit: A configured collar is not on the Fi account, or Fi rejected the login.
     """
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stop.set)
 
-    keys = {(c.name, i) for c in cfg.collars for i in range(len(c.events))}
+    keys = {(c.name, k) for c in cfg.collars for k in event_keys(c)}
     states = state_store.load_state(cfg.state_file, keys)
     monitor = health.Health(cfg.poll_interval)
     server = await health.serve_health(monitor, cfg.health_port)
@@ -119,6 +141,8 @@ async def run(cfg: config.Config) -> None:
             while not stop.is_set():
                 try:
                     pets = await client.fetch_pets()
+                except fi.FiAuthError as exc:  # exit so restarts back off; retrying every poll risks account lockout
+                    raise SystemExit(f"Fi auth failed: {exc}") from None
                 except (fi.FiError, httpx.HTTPError, ValueError) as exc:
                     log.error("Fi poll failed: %s", exc)
                 else:

@@ -51,7 +51,8 @@ def _collar_offline(
     if minutes <= event.minutes:
         return None
 
-    seen = pet.last_connection.astimezone(tz).strftime("%H:%M")
+    local = pet.last_connection.astimezone(tz)
+    seen = local.strftime("%H:%M" if local.date() == now.astimezone(tz).date() else "%a %b %d %H:%M")
 
     return Message(
         f"{pet.name}: Collar Offline",

@@ -1,6 +1,6 @@
 [project]
 name = "fi-notifications"
-version = "0.2.0"
+version = "0.3.0"
 description = "Notifications for Fi Collars"
 requires-python = ">=3.13"
 dependencies = [

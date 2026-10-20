@@ -38,12 +38,18 @@ def _resolve_secret(data: Any, key: str, *, required: bool) -> Any:
         raise ValueError(f"set only one of {key!r} or {file_key!r}")
 
     if file_key in data:
+        if not isinstance(data[file_key], str):
+            raise ValueError(f"{file_key} must be a file path")
+
         path = pathlib.Path(data[file_key])
 
         try:
             secret = path.read_text().strip()
         except OSError as exc:
             raise ValueError(f"cannot read {file_key} {path}: {exc.strerror}") from None
+
+        if not secret:
+            raise ValueError(f"{file_key} {path} is empty")
 
         data = {k: v for k, v in data.items() if k != file_key} | {key: secret}
 
@@ -234,6 +240,10 @@ class Config(_Model):
 
     @pydantic.model_validator(mode="after")
     def _targets_exist(self) -> Self:
+        names = [c.name for c in self.collars]
+        dupes = sorted({n for n in names if names.count(n) > 1})
+        if dupes:
+            raise ValueError(f"duplicate collar names: {', '.join(dupes)}")
         for collar in self.collars:
             for event in collar.events:
                 if event.target not in self.targets:
