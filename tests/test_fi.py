@@ -23,7 +23,6 @@ def test_parse_pets_v2() -> None:
     assert rex.charging is True
     assert rex.connection_type == "ConnectedToBase"
     assert rex.last_connection == datetime.datetime(2026, 10, 9, 14, 2, tzinfo=datetime.UTC)
-    assert rex.module_id == "mod-rex"
 
 
 def test_parse_pets_v1() -> None:
@@ -34,9 +33,7 @@ def test_parse_pets_v1() -> None:
 
 
 def test_parse_float_battery_and_string_info() -> None:
-    data = json.loads(json.dumps(FIXTURE["data"]))
-    device = data["currentUser"]["userHouseholds"][0]["household"]["pets"][0]["device"]
-    device["info"] = json.dumps({"batteryPercent": 40.6})
+    data = _with_rex(info=json.dumps({"batteryPercent": 40.6}))
     assert by_name(fi.parse_pets(data))["Rex"].battery_percent == 41
 
 

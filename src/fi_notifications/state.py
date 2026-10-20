@@ -1,16 +1,19 @@
 """Optional JSON persistence of limiter state, keyed by (collar name, event index)."""
 
-import datetime
 import json
 import logging
 import os
 import pathlib
+
+import pydantic
 
 from fi_notifications import limiter
 
 log = logging.getLogger(__name__)
 
 type StateKey = tuple[str, int]
+
+_ADAPTER = pydantic.TypeAdapter(limiter.LimiterState)
 
 
 def load_state(path: pathlib.Path | None, valid_keys: set[StateKey]) -> dict[StateKey, limiter.LimiterState]:
@@ -25,22 +28,21 @@ def load_state(path: pathlib.Path | None, valid_keys: set[StateKey]) -> dict[Sta
     """
     if path is None or not path.exists():
         return {}
+
     try:
         raw = json.loads(path.read_text())
         state: dict[StateKey, limiter.LimiterState] = {}
+
         for key, value in raw.items():
             name, _, index = key.rpartition("/")
-            if (name, int(index)) not in valid_keys:
-                continue
-            window_date, next_allowed = value["window_date"], value["next_allowed"]
-            state[name, int(index)] = limiter.LimiterState(
-                window_date=datetime.date.fromisoformat(window_date) if window_date else None,
-                sent=int(value["sent"]),
-                next_allowed=datetime.datetime.fromisoformat(next_allowed) if next_allowed else None,
-            )
+            parsed = (name, int(index))
+
+            if parsed in valid_keys:
+                state[parsed] = _ADAPTER.validate_python(value)
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         log.warning("ignoring unreadable state file %s: %r", path, exc)
         return {}
+
     return state
 
 
@@ -56,14 +58,8 @@ def save_state(path: pathlib.Path | None, state: dict[StateKey, limiter.LimiterS
     """
     if path is None:
         return
-    raw = {
-        f"{name}/{index}": {
-            "window_date": s.window_date.isoformat() if s.window_date else None,
-            "sent": s.sent,
-            "next_allowed": s.next_allowed.isoformat() if s.next_allowed else None,
-        }
-        for (name, index), s in state.items()
-    }
+
+    raw = {f"{name}/{index}": _ADAPTER.dump_python(s, mode="json") for (name, index), s in state.items()}
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(raw, indent=2))
     os.replace(tmp, path)

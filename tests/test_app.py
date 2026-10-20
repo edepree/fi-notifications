@@ -13,7 +13,7 @@ from fi_notifications import fi
 from fi_notifications import limiter
 
 NY = zoneinfo.ZoneInfo("America/New_York")
-REX = fi.PetStatus("p", "Rex", "m", 37, None, "ConnectedToUser", datetime.datetime.now(datetime.UTC), "NORMAL")
+REX = fi.PetStatus("p", "Rex", 37, None, "ConnectedToUser", datetime.datetime.now(datetime.UTC), "NORMAL")
 
 
 def make_config(tmp_path: pathlib.Path, collars: tuple[str, ...] = ("Rex",), limit: int | None = 2) -> config.Config:

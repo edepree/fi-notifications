@@ -11,7 +11,8 @@ from typing import Any
 
 import httpx
 
-BASE = "https://api.tryfi.com"
+from fi_notifications import fi
+
 QUERY = """query { currentUser { userHouseholds { household { pets {
   __typename id name
   device {
@@ -42,9 +43,12 @@ def redact(node: Any, names: dict[str, str]) -> Any:
     """
     if isinstance(node, list):
         return [redact(n, names) for n in node]
+
     if not isinstance(node, dict):
         return node
+
     out: dict[str, Any] = {}
+
     for key, value in node.items():
         if key == "wifiNetworkNames":
             out[key] = ["REDACTED"] * len(value)
@@ -54,6 +58,7 @@ def redact(node: Any, names: dict[str, str]) -> Any:
             out[key] = names.setdefault(value, f"Pet{len(names) + 1}")
         else:
             out[key] = redact(value, names)
+
     return out
 
 
@@ -61,12 +66,15 @@ def main() -> None:
     """Runs the probe and prints the redacted response."""
     path = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "~/.config/fi-notifications/creds")
     email, password = path.expanduser().read_text().splitlines()[:2]
-    with httpx.Client(base_url=BASE, timeout=30) as client:
+
+    with httpx.Client(base_url=fi.BASE_URL, timeout=30) as client:
         login = client.post("/auth/login", data={"email": email, "password": password})
         body = login.json()
+
         if login.is_error or "error" in body:
             sys.exit(f"login failed: HTTP {login.status_code}")  # No retry to avoid account lockout
-        resp = client.get("/graphql", params={"query": QUERY}, headers={"content-type": "application/json"})
+
+        resp = client.get("/graphql", params={"query": QUERY}, headers=fi.GRAPHQL_HEADERS)
         print(f"graphql HTTP {resp.status_code}", file=sys.stderr)
         print(json.dumps(redact(resp.json(), {}), indent=2))
 

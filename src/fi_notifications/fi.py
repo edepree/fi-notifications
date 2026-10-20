@@ -14,7 +14,7 @@ BASE_URL = "https://api.tryfi.com"
 # Apollo's CSRF guard rejects GETs without a non-simple content-type
 GRAPHQL_HEADERS = {"content-type": "application/json"}
 STATUS_QUERY = (
-    "query { currentUser { userHouseholds { household { pets { id name device { moduleId info "
+    "query { currentUser { userHouseholds { household { pets { id name device { info "
     "operationParams { mode } lastConnectionState { __typename date "
     "... on ConnectedToBase { chargingBase { id } } } } } } } } }"
 )
@@ -35,7 +35,6 @@ class PetStatus:
     Attributes:
         pet_id: Fi pet id.
         name: Pet name as shown in the Fi app.
-        module_id: Collar module id.
         battery_percent: Battery level, 0-100.
         is_charging: Charging flag; only V1 collars report it, otherwise None.
         connection_type: GraphQL type of the last connection, e.g. "ConnectedToBase".
@@ -45,7 +44,6 @@ class PetStatus:
 
     pet_id: str
     name: str
-    module_id: str
     battery_percent: int
     is_charging: bool | None
     connection_type: str
@@ -86,7 +84,6 @@ def _parse_pet(pet: dict[str, Any]) -> PetStatus:
     return PetStatus(
         pet_id=pet["id"],
         name=pet["name"],
-        module_id=device["moduleId"],
         battery_percent=round(float(info["batteryPercent"])),
         is_charging=None if charging is None else bool(charging),
         connection_type=conn["__typename"],

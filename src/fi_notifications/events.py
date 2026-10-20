@@ -32,7 +32,9 @@ class Message:
 def _battery_low(pet: fi.PetStatus, event: config.BatteryLow) -> Message | None:
     if pet.battery_percent >= event.threshold or (event.suppress_when_charging and pet.charging):
         return None
+
     pct = pet.battery_percent
+
     return Message(
         f"{pet.name}: Battery Low",
         f"{pet.name}'s collar battery is {pct}% (threshold {event.threshold}%).",
@@ -45,9 +47,12 @@ def _collar_offline(
     pet: fi.PetStatus, event: config.CollarOffline, now: datetime.datetime, tz: zoneinfo.ZoneInfo
 ) -> Message | None:
     minutes = int((now - pet.last_connection).total_seconds() // 60)
+
     if minutes <= event.minutes:
         return None
+
     seen = pet.last_connection.astimezone(tz).strftime("%H:%M")
+
     return Message(
         f"{pet.name}: Collar Offline",
         f"No connection for {minutes} minutes (last seen {seen}).",
@@ -59,6 +64,7 @@ def _collar_offline(
 def _lost_mode(pet: fi.PetStatus) -> Message | None:
     if pet.mode != "LOST_DOG":
         return None
+
     return Message(f"{pet.name}: Lost Mode", "Lost dog mode is active.", "urgent", "rotating_light")
 
 
@@ -85,8 +91,10 @@ def evaluate(
             msg = _lost_mode(pet)
         case _:
             assert_never(event)
+
     if msg is None:
         return None
+
     # ntfy only accepts [-_A-Za-z0-9]{1,64}; Fi ids are external
     sid = re.sub(r"[^-_A-Za-z0-9]", "_", f"{pet.pet_id}-{event.type}")[-64:]
     return dataclasses.replace(msg, priority=event.priority or msg.priority, sid=sid)

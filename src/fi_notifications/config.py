@@ -31,18 +31,25 @@ def _resolve_secret(data: Any, key: str, *, required: bool) -> Any:
     """
     if not isinstance(data, dict):
         return data
+
     file_key = f"{key}_file"
+
     if key in data and file_key in data:
         raise ValueError(f"set only one of {key!r} or {file_key!r}")
+
     if file_key in data:
         path = pathlib.Path(data[file_key])
+
         try:
             secret = path.read_text().strip()
         except OSError as exc:
             raise ValueError(f"cannot read {file_key} {path}: {exc.strerror}") from None
+
         data = {k: v for k, v in data.items() if k != file_key} | {key: secret}
+
     if required and key not in data:
         raise ValueError(f"{key!r} or {file_key!r} is required")
+
     return data
 
 

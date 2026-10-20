@@ -43,6 +43,7 @@ def window_bounds(
     else:
         start = datetime.datetime.combine(day, window.start, tzinfo=t.tzinfo)
         end = datetime.datetime.combine(day, window.end, tzinfo=t.tzinfo)
+
     return (start, end) if start <= t < end else None
 
 
@@ -65,9 +66,11 @@ def allowed(
         return False
     if max_per_window is None:
         return True
+
     state = _today(state, t)
     if state.sent >= max_per_window:
         return False
+
     return state.next_allowed is None or t >= state.next_allowed
 
 
@@ -91,8 +94,10 @@ def record(
     state = _today(state, t)
     sent = state.sent + 1
     bounds = window_bounds(t, window)
+
     if max_per_window is None or sent >= max_per_window or bounds is None:
         return dataclasses.replace(state, sent=sent, next_allowed=None)
+
     # same-tzinfo subtraction ignores DST, so do slot math in UTC
     now, end = t.astimezone(datetime.UTC), bounds[1].astimezone(datetime.UTC)
     return dataclasses.replace(state, sent=sent, next_allowed=now + (end - now) / (max_per_window - sent + 1))

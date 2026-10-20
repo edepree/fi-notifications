@@ -15,7 +15,6 @@ NOW = LAST + datetime.timedelta(minutes=72)
 BASE = fi.PetStatus(
     pet_id="p",
     name="Rex",
-    module_id="m",
     battery_percent=37,
     is_charging=None,
     connection_type="ConnectedToUser",
